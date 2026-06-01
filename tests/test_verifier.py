@@ -91,6 +91,39 @@ class TestGuardLayer:
         assert result.warnings[0].type == "input_error"
 
 
+class TestCompoundCardinal:
+    def test_model_number_not_flagged(self):
+        # "16" in "iPhone 16" must not produce a missing_entity warning
+        result = verify(
+            query="Which phone is recommended?",
+            retrieved_docs=["The iPhone 16 Pro was released in late 2024 and features improved cameras."],
+            llm_response="We recommend the iPhone 16 Pro for its camera system.",
+        )
+        entity_texts = [w.text for w in result.warnings if w.type == "missing_entity"]
+        assert "16" not in entity_texts, f"'16' falsely flagged as missing entity: {entity_texts}"
+
+    def test_software_version_not_flagged(self):
+        result = verify(
+            query="What OS version is supported?",
+            retrieved_docs=["Windows 11 is fully supported. Minimum requirement is Windows 10."],
+            llm_response="The software runs on Windows 11 and Windows 10.",
+        )
+        entity_texts = [w.text for w in result.warnings if w.type == "missing_entity"]
+        assert "11" not in entity_texts
+        assert "10" not in entity_texts
+
+    def test_standalone_number_still_flagged(self):
+        # A bare CARDINAL not attached to a proper noun should still be caught
+        result = verify(
+            query="What is the headcount?",
+            retrieved_docs=["The company has 150 employees."],
+            llm_response="The company has 320 employees in three offices.",
+        )
+        # 320 is not in docs; 150 is — but 320 as a standalone cardinal should be caught
+        entity_texts = [w.text for w in result.warnings if w.type == "missing_entity"]
+        assert "320" in entity_texts
+
+
 class TestMultiChunk:
     def test_entity_found_across_chunks(self):
         # Entity is in the second chunk — concat must find it
