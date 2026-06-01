@@ -7,7 +7,7 @@ Runtime hallucination detection middleware for RAG applications.
 ## Install
 
 ```bash
-pip install raguard
+pip install raguard-py
 python -m spacy download en_core_web_sm
 ```
 
