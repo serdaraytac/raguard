@@ -64,10 +64,14 @@ result = verify(
 )
 ```
 
-raguard maps the `lang` code to the standard spaCy model name. If you use a custom or fine-tuned model, pass the full model name directly:
+raguard maps the `lang` code to the standard spaCy model name. If you use a custom or fine-tuned spaCy model, pass the installed package name or local path directly:
 
 ```python
-result = verify(..., lang="my_org/custom-tr-ner-model")
+# installed spaCy package
+result = verify(..., lang="tr_core_news_trf")
+
+# local path
+result = verify(..., lang="/models/my-custom-tr-ner")
 ```
 
 > **Note on Turkish NER quality:** `tr_core_news_sm` has limited accuracy on proper nouns and dates compared to `en_core_web_sm`. The date regex rules and vague-reference checks work language-independently and will still flag issues. Entity-level recall on Turkish text is beta. See [Limitations](#limitations).
@@ -160,7 +164,7 @@ First call loads the spaCy model (~200ms). Subsequent calls are fast.
 
 ## Limitations
 
-- **Turkish NER quality is beta-level.** The `en_core_web_sm` model has limited accuracy on Turkish proper nouns and dates. A dedicated Turkish model will be added in v2.
+- **Turkish NER quality is beta-level.** `tr_core_news_sm` has limited recall on proper nouns and named dates compared to `en_core_web_sm`. Date regex and vague-reference checks are language-independent and still work. A higher-quality Turkish model option will be documented in v2.
 - **Numerical hallucinations are not detected in v1.** If the LLM says 18% where the document says 15%, raguard will not flag it. Semantic numerical grounding requires an LLM pass (v2).
 - **Compound model numbers may produce false positives.** Numbers inside product names like "iPhone 16" or "Windows 11" are filtered via noun-chunk analysis, but edge cases remain (e.g. when the parser fails to resolve the compound).
 - **Semantic hallucinations are out of scope for v1.** A response that correctly uses entities but draws a wrong conclusion from the documents will not be flagged. This requires a grounding pass against each claim, planned for v2.
@@ -176,7 +180,7 @@ First call loads the spaCy model (~200ms). Subsequent calls are fast.
 - Optional LLM semantic pass for claim-level grounding (OpenAI / Anthropic / local)
 - Numerical hallucination detection
 - False positive reduction via confidence scoring
-- Turkish NER via Hugging Face `turkish-ner` model
+- Turkish NER via a transformer-based spaCy model (e.g. `tr_core_news_trf`)
 - Per-chunk source attribution (`list[Document]` API)
 - Warning deduplication and severity grouping
 
