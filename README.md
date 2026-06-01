@@ -33,23 +33,44 @@ python -m spacy download en_core_web_sm
 
 ## Multi-language Support
 
-The `lang` parameter controls which language model is used for NER. Default is `"en"`.
+raguard uses spaCy for named-entity recognition. The default model is `en_core_web_sm` (English). If your RAG pipeline runs on Turkish, French, or another language, you install the spaCy model yourself and pass `lang=` to `verify()`.
 
-```python
-result = verify(query=..., retrieved_docs=..., llm_response=..., lang="tr")
-```
-
-Install the spaCy model for your language:
+**Step 1 — install the spaCy model for your language:**
 
 ```bash
-pip install raguard-py          # English (default)
-pip install raguard-py[french]  # + French
-pip install raguard-py[german]  # + German
-pip install raguard-py[turkish] # + Turkish (beta)
-pip install raguard-py[all]     # All languages
+# Turkish
+python -m spacy download tr_core_news_sm
+
+# French
+python -m spacy download fr_core_news_sm
+
+# German
+python -m spacy download de_core_news_sm
+
+# Spanish
+python -m spacy download es_core_news_sm
 ```
 
-> **Note:** Multi-language support is on the roadmap. The `lang` parameter is part of the v1 API contract; non-English models will be enabled progressively. See [Roadmap](#roadmap).
+**Step 2 — pass `lang=` to `verify()`:**
+
+```python
+from raguard import verify
+
+result = verify(
+    query="Q3 2024 teslim tarihi nedir?",
+    retrieved_docs=["Q2 projesi 15 Haziran'da tamamlandı."],
+    llm_response="Q3 2024 teslim tarihi 30 Eylül 2024'tür.",
+    lang="tr",
+)
+```
+
+raguard maps the `lang` code to the standard spaCy model name. If you use a custom or fine-tuned model, pass the full model name directly:
+
+```python
+result = verify(..., lang="my_org/custom-tr-ner-model")
+```
+
+> **Note on Turkish NER quality:** `tr_core_news_sm` has limited accuracy on proper nouns and dates compared to `en_core_web_sm`. The date regex rules and vague-reference checks work language-independently and will still flag issues. Entity-level recall on Turkish text is beta. See [Limitations](#limitations).
 
 ## Usage
 

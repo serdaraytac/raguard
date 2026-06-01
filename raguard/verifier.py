@@ -12,8 +12,13 @@ def verify(
     query: str,
     retrieved_docs: list[str],
     llm_response: str,
+    lang: str = "en",
 ) -> VerifyResult:
     """Check llm_response for claims not supported by retrieved_docs.
+
+    lang: BCP-47 language code for NER model selection (default "en").
+    The spaCy model for the chosen language must be installed separately.
+    See README → Multi-language Support.
 
     retrieved_docs order matters: chunks are joined with a separator, so
     boundary artifacts are possible if chunks are not self-contained.
@@ -44,7 +49,7 @@ def verify(
 
     warnings: list[Warning] = []
     warnings.extend(check_dates(llm_response, docs_concat))
-    warnings.extend(check_entities(llm_response, docs_concat))
+    warnings.extend(check_entities(llm_response, docs_concat, lang=lang))
     warnings.extend(check_vague_references(llm_response, docs_concat))
 
     summary = Summary(

@@ -5,21 +5,33 @@ from ..models import Warning
 if TYPE_CHECKING:
     import spacy
 
-_nlp = None
+_DEFAULT_MODELS: dict[str, str] = {
+    "en": "en_core_web_sm",
+    "tr": "tr_core_news_sm",
+    "fr": "fr_core_news_sm",
+    "de": "de_core_news_sm",
+    "es": "es_core_news_sm",
+    "it": "it_core_news_sm",
+    "nl": "nl_core_news_sm",
+    "pt": "pt_core_news_sm",
+}
+
+_nlp_cache: dict[str, object] = {}
 
 
-def _get_nlp():
-    global _nlp
-    if _nlp is None:
+def _get_nlp(lang: str = "en"):
+    if lang not in _nlp_cache:
         import spacy  # noqa: F811
+        model = _DEFAULT_MODELS.get(lang, lang)  # fall back to lang as model name
         try:
             # parser enabled: required for noun_chunks (compound cardinal detection)
-            _nlp = spacy.load("en_core_web_sm", disable=["lemmatizer"])
+            _nlp_cache[lang] = spacy.load(model, disable=["lemmatizer"])
         except OSError:
             raise RuntimeError(
-                "spaCy model not found. Run: python -m spacy download en_core_web_sm"
+                f"spaCy model '{model}' not found. "
+                f"Run: python -m spacy download {model}"
             )
-    return _nlp
+    return _nlp_cache[lang]
 
 
 # Entity types worth cross-checking (DATE handled separately by dates.py)
@@ -48,8 +60,8 @@ def _compound_cardinal_indices(doc) -> frozenset[int]:
     return frozenset(compound)
 
 
-def extract_entities(text: str) -> set[str]:
-    nlp = _get_nlp()
+def extract_entities(text: str, lang: str = "en") -> set[str]:
+    nlp = _get_nlp(lang)
     doc = nlp(text)
     compound = _compound_cardinal_indices(doc)
     return {
@@ -63,8 +75,8 @@ def extract_entities(text: str) -> set[str]:
     }
 
 
-def check_entities(response: str, docs_concat: str) -> list[Warning]:
-    response_entities = extract_entities(response)
+def check_entities(response: str, docs_concat: str, lang: str = "en") -> list[Warning]:
+    response_entities = extract_entities(response, lang=lang)
     warnings: list[Warning] = []
 
     for entity in response_entities:
